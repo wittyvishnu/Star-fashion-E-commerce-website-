@@ -14,12 +14,13 @@ export const razorpayWebhook = async (req, res) => {
 
     // 🔐 Validate signature
     const signature = req.headers["x-razorpay-signature"];
-    const body = JSON.stringify(req.body);
+    const body = req.body; // RAW BUFFER (correct)
 
     const expectedSignature = crypto
-      .createHmac("sha256", secret)
-      .update(body)
-      .digest("hex");
+    .createHmac("sha256", secret)
+    .update(body)
+    .digest("hex");
+
 
     if (signature !== expectedSignature) {
       console.log("❌ Invalid webhook signature");
