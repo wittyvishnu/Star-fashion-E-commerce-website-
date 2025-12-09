@@ -175,8 +175,7 @@ export const verifyPayment = async (req, res) => {
     }
     const existingOrder = await Order.findOne({
       razorpayOrderId,
-      razorpayPaymentId,
-      razorpaySignature
+      razorpayPaymentId
     }).lean(); 
 
     if (existingOrder) {
