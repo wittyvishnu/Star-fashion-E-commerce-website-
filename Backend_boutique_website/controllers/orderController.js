@@ -173,7 +173,19 @@ export const verifyPayment = async (req, res) => {
     if (expectedSignature !== razorpaySignature) {
       throw new Error("Invalid payment signature");
     }
+    const existingOrder = await Order.findOne({
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature
+    }).lean(); 
 
+    if (existingOrder) {
+      return res.status(200).json({
+        success: true,
+        message: "Payment verified, order created",
+        orderId: existingOrder._id
+      });
+    }
     // 2️⃣ Fetch reserved order (NO req.user needed)
     const reserved = await ReservedOrder.findOne({ razorpayOrderId }).session(session);
 
