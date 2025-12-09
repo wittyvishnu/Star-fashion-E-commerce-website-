@@ -10,7 +10,7 @@ import crypto from "crypto";
 export const razorpayWebhook = async (req, res) => {
   try {
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
-    console.log("🔐 Razorpay Webhook Secret:", secret);
+    
 
     // 🔐 Validate signature
     const signature = req.headers["x-razorpay-signature"];
@@ -26,10 +26,9 @@ export const razorpayWebhook = async (req, res) => {
       console.log("❌ Invalid webhook signature");
       return res.status(400).json({ success: false });
     }
-
-    const event = req.body.event;
+    const data = JSON.parse(req.body.toString());
+    const event = data.event;
     console.log("🔔 Razorpay Webhook Event:", event);
-
     // =======================================================
     //   1️⃣ PAYMENT CAPTURED → Create final order
     // =======================================================
