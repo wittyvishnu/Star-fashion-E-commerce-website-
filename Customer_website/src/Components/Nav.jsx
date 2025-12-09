@@ -25,6 +25,7 @@ const Nav = () => {
   const [searchTerm, setSearchTerm] = useState("");
   
   const dropdownRef = useRef(null);
+  const dropdownHideTimeout = useRef(null);
   const sidebarRef = useRef(null); // Ref for closing sidebar on outside click
   
   const { user } = useSelector(state => state.auth);
@@ -43,6 +44,29 @@ const Nav = () => {
     dispatch(logOut());
     navigate('/account');
     setDropdownVisible(false);
+  };
+
+  const clearDropdownHide = () => {
+    if (dropdownHideTimeout.current) {
+      clearTimeout(dropdownHideTimeout.current);
+      dropdownHideTimeout.current = null;
+    }
+  };
+
+  const handleDropdownEnter = () => {
+    if (!isMobile) {
+      clearDropdownHide();
+      setDropdownVisible(true);
+    }
+  };
+
+  const handleDropdownLeave = () => {
+    if (!isMobile) {
+      clearDropdownHide();
+      dropdownHideTimeout.current = setTimeout(() => {
+        setDropdownVisible(false);
+      }, 300); // 2s grace period to keep menu open
+    }
   };
 
   const handleSearch = (e) => {
@@ -81,7 +105,10 @@ const Nav = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      clearDropdownHide();
+    };
   }, [sidebarVisible]);
 
   return (
@@ -190,11 +217,14 @@ const Nav = () => {
                 <div 
                   className="relative"
                   ref={dropdownRef}
-                  onMouseEnter={() => !isMobile && setDropdownVisible(true)}
-                  onMouseLeave={() => !isMobile && setDropdownVisible(false)}
+                  onMouseEnter={handleDropdownEnter}
+                  onMouseLeave={handleDropdownLeave}
                 >
                   <button 
-                    onClick={() => setDropdownVisible(!isDropdownVisible)}
+                    onClick={() => {
+                      clearDropdownHide();
+                      setDropdownVisible(!isDropdownVisible);
+                    }}
                     className="flex items-center focus:outline-none"
                   >
                     <FaUserCircle className="text-gray-700 hover:text-[#5A67BA] transition" size={isMobile ? 24 : 30} />
