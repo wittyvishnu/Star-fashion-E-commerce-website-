@@ -58,26 +58,43 @@ export const orderApiSlice = apiSlice.injectEndpoints({
             },
             serializeQueryArgs: ({ endpointName }) => endpointName,
             merge: (currentCache, newItems, { arg }) => {
+                // When loading the first page, just use whatever the API returned
                 if (arg.page === 1) {
                     return {
-                        message: newItems.message,
-                        pagination: newItems.pagination,
-                        data: newItems.data?.orderId ? [newItems.data] : [] 
+                        ...newItems,
+                        data: Array.isArray(newItems?.data)
+                            ? newItems.data
+                            : newItems?.data
+                            ? [newItems.data]
+                            : [],
                     };
                 }
-                if (newItems.data?.orderId) {
-                    const dataArray = Array.isArray(currentCache.data) ? currentCache.data : [];
-                    const existing = dataArray.find(o => o.orderId === newItems.data.orderId);
-                    if (!existing) {
-                        return {
-                            ...currentCache,
-                            pagination: newItems.pagination,
-                            message: newItems.message,
-                            data: [...dataArray, newItems.data]
-                        };
-                    }
-                }
-                return currentCache;
+
+                // For subsequent pages, append new unique orders to the existing cache
+                const existingData = Array.isArray(currentCache?.data)
+                    ? currentCache.data
+                    : [];
+
+                const incomingArray = Array.isArray(newItems?.data)
+                    ? newItems.data
+                    : newItems?.data
+                    ? [newItems.data]
+                    : [];
+
+                const mergedData = [
+                    ...existingData,
+                    ...incomingArray.filter(
+                        (order) =>
+                            !existingData.some(
+                                (existing) => existing.orderId === order.orderId
+                            )
+                    ),
+                ];
+
+                return {
+                    ...newItems,
+                    data: mergedData,
+                };
             },
             forceRefetch({ currentArg, previousArg }) {
                 return currentArg !== previousArg;
