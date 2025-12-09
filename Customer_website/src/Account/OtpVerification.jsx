@@ -49,7 +49,16 @@ const OtpVerification = ({ contactType, contactValue, purpose, onSuccess }) => {
       setMessage({ type: 'success', text: `A new OTP has been sent to your ${contactType}.` });
       setTimer(60);
     } catch (err) {
-      setMessage({ type: 'error', text: err.data?.message || 'Failed to resend OTP.' });
+      const isRateLimited = err?.status === 429;
+      setMessage({
+        type: 'error',
+        text: isRateLimited
+          ? 'Too many OTP requests. Please wait 5 minutes before trying again.'
+          : err?.data?.message || 'Failed to resend OTP.',
+      });
+      if (isRateLimited) {
+        setTimer(300); // lockout 5 minutes to mirror backend window
+      }
     }
   };
 
@@ -65,7 +74,16 @@ const OtpVerification = ({ contactType, contactValue, purpose, onSuccess }) => {
       await verifyOtp({ contact: contactValue, otp: finalOtp, purpose }).unwrap();
       onSuccess(finalOtp); // Pass the verified OTP back to the parent
     } catch (err) {
-      setMessage({ type: 'error', text: err.data?.message || `Invalid ${contactType} OTP.` });
+      const isRateLimited = err?.status === 429;
+      setMessage({
+        type: 'error',
+        text: isRateLimited
+          ? 'Too many attempts. Please wait 5 minutes before retrying.'
+          : err?.data?.message || `Invalid ${contactType} OTP.`,
+      });
+      if (isRateLimited) {
+        setTimer(300);
+      }
     }
   };
 

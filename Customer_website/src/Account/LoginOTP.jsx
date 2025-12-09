@@ -37,7 +37,16 @@ function LoginOTP() {
       setMessage({ type: 'success', text: 'OTP sent successfully!' });
       setTimer(30);
     } catch (err) {
-      setMessage({ type: 'error', text: err.data?.message || "Error sending OTP, please try again." });
+      const isRateLimited = err?.status === 429;
+      setMessage({
+        type: 'error',
+        text: isRateLimited
+          ? 'Too many OTP requests. Please wait 5 minutes before trying again.'
+          : err?.data?.message || "Error sending OTP, please try again.",
+      });
+      if (isRateLimited) {
+        setTimer(300); // lockout to mirror backend limiter
+      }
     }
   };
 

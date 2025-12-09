@@ -102,7 +102,13 @@ const AuthPage = () => {
       setMessage({ type: 'success', text: 'OTP sent to your phone number.' });
       setSignupStep(2);
     } catch (err) {
-      setMessage({ type: 'error', text: err.data?.message || 'Failed to send OTP.' });
+      const isRateLimited = err?.status === 429;
+      setMessage({
+        type: 'error',
+        text: isRateLimited
+          ? 'Too many OTP requests. Please wait 5 minutes before trying again.'
+          : err.data?.message || 'Failed to send OTP.',
+      });
     }
   };
 
@@ -114,7 +120,13 @@ const AuthPage = () => {
       setMessage({ type: 'success', text: 'Phone verified! Now sending OTP to your email.' });
       setSignupStep(3);
     } catch (err) {
-      setMessage({ type: 'error', text: err.data?.message || 'Failed to send email OTP.' });
+      const isRateLimited = err?.status === 429;
+      setMessage({
+        type: 'error',
+        text: isRateLimited
+          ? 'Too many OTP requests. Please wait 5 minutes before trying again.'
+          : err.data?.message || 'Failed to send email OTP.',
+      });
     }
   };
 
