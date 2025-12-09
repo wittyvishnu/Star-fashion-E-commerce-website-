@@ -245,19 +245,19 @@ export const getAllOrders = async (req, res) => {
   try {
     const userId = req.user.id;
     const page = parseInt(req.query.page) || 1;
-    const limit = 1;
+    const limit = parseInt(req.query.limit) || 5;
     const skip = (page - 1) * limit;
 
     const total = await Order.countDocuments({ user: userId });
 
-    const order = await Order.findOne({ user: userId })
+    const orders = await Order.find({ user: userId })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .populate("orderItems.product", "name thumbnail")
       .lean();
 
-    if (!order) {
+    if (!orders.length) {
       return res.status(404).json({ message: "No orders found" });
     }
 
@@ -268,87 +268,91 @@ export const getAllOrders = async (req, res) => {
         month: "short"
       });
 
-    const createdDate = new Date(order.createdAt);
+    const formattedOrders = await Promise.all(
+      orders.map(async (order) => {
+        const createdDate = new Date(order.createdAt);
 
-    const estimatedDelivery = new Date(order.createdAt);
-    estimatedDelivery.setDate(estimatedDelivery.getDate() + 14);
+        const estimatedDelivery = new Date(order.createdAt);
+        estimatedDelivery.setDate(estimatedDelivery.getDate() + 14);
 
-    const estimatedDeliveryStr = formatDate(estimatedDelivery);
-    const createdDateStr = formatDate(createdDate);
+        const estimatedDeliveryStr = formatDate(estimatedDelivery);
+        const createdDateStr = formatDate(createdDate);
 
-    // Build formatted items
-    const formattedItems = await Promise.all(
-      order.orderItems.map(async (item) => {
-        let message = "";
+        const formattedItems = await Promise.all(
+          order.orderItems.map(async (item) => {
+            let message = "";
 
-        // Processing / Shipped
-        if (["Processing", "Shipped"].includes(item.orderStatus)) {
-          message = `Estimated delivery by ${estimatedDeliveryStr}`;
-        }
+            // Processing / Shipped
+            if (["Processing", "Shipped"].includes(item.orderStatus)) {
+              message = `Estimated delivery by ${estimatedDeliveryStr}`;
+            }
 
-        // Delivered
-        else if (item.orderStatus === "Delivered") {
-          message = `Delivered `;
-        }
+            // Delivered
+            else if (item.orderStatus === "Delivered") {
+              message = `Delivered `;
+            }
 
-        // Cancelled
-        else if (item.orderStatus === "Cancelled") {
-          if (order.paymentMethod === "COD") {
-            message = `Cancelled`;
-          } else {
-            // Razorpay refund status
-            const refund = await Refund.findOne({
-              order: order._id,
-              product: item.product._id
-            }).lean();
+            // Cancelled
+            else if (item.orderStatus === "Cancelled") {
+              if (order.paymentMethod === "COD") {
+                message = `Cancelled`;
+              } else {
+                // Razorpay refund status
+                const refund = await Refund.findOne({
+                  order: order._id,
+                  product: item.product._id
+                }).lean();
 
-            if (!refund) {
-              message = "Refund status unavailable";
-            } else {
-              switch (refund.status) {
-                case "Processing":
-                  message = "Refund is processing";
-                  break;
-
-                case "Completed":
-                  message = "Refund is completed on " + formatDate(refund.processedAt);
-                  break;
-
-            
-                case "Failed":
-                  message = "Refund failed";
-                  break;
-
-                default:
+                if (!refund) {
                   message = "Refund status unavailable";
+                } else {
+                  switch (refund.status) {
+                    case "Processing":
+                      message = "Refund is processing";
+                      break;
+
+                    case "Completed":
+                      message = "Refund is completed on " + formatDate(refund.processedAt);
+                      break;
+
+                    case "Failed":
+                      message = "Refund failed";
+                      break;
+
+                    default:
+                      message = "Refund status unavailable";
+                  }
+                }
               }
             }
-          }
-        }
+
+            return {
+              productId: item.product._id,
+              thumbnail: item.product.thumbnail,
+              name: item.product.name,
+              price: item.price,
+              quantity: item.quantity,
+              orderStatus: item.orderStatus,
+              paymentStatus: item.paymentStatus,
+              message
+            };
+          })
+        );
 
         return {
-          productId: item.product._id,
-          thumbnail: item.product.thumbnail,
-          name: item.product.name,
-          price: item.price,
-          quantity: item.quantity,
-          orderStatus: item.orderStatus,
-          paymentStatus: item.paymentStatus,
-          message
+          orderId: order._id,
+          paymentMethod: order.paymentMethod,
+          totalAmount: order.totalAmount || order.paymentDetails?.totalPrice,
+          createdAt: order.createdAt,
+          items: formattedItems
         };
       })
     );
 
     // Final response
     res.status(200).json({
-      message: "Order fetched successfully",
-      data: {
-        orderId: order._id,
-        paymentMethod: order.paymentMethod,
-        totalAmount: order.totalAmount || order.paymentDetails?.totalPrice,
-        createdAt: order.createdAt,
-        items: formattedItems
-      },
+      message: "Orders fetched successfully",
+      data: formattedOrders,
       pagination: {
         total,
         page,
