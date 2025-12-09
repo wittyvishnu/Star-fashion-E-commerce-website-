@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import showcase from '../../Utiles/banner.png'; // Ensure path is correct
+import showcase from '../../Utiles/banner1.png'; // Ensure path is correct
 
 const Showcase = () => {
   return (
