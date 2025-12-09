@@ -24,6 +24,9 @@ connectmongoDb();
 const PORT = process.env.PORT || 5000;
 const app = express();
 
+// Trust proxy headers (required for accurate rate limiting behind proxies)
+app.set("trust proxy", 1);
+
 // Middleware
 const allowedOrigins = (process.env.CORS_ORIGINS || "")
   .split(",")

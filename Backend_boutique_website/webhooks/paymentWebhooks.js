@@ -10,6 +10,7 @@ import crypto from "crypto";
 export const razorpayWebhook = async (req, res) => {
   try {
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+    console.log("🔐 Razorpay Webhook Secret:", secret);
 
     // 🔐 Validate signature
     const signature = req.headers["x-razorpay-signature"];
