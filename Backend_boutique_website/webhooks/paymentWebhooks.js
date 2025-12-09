@@ -33,7 +33,7 @@ export const razorpayWebhook = async (req, res) => {
     //   1️⃣ PAYMENT CAPTURED → Create final order
     // =======================================================
     if (event === "payment.captured") {
-      const payment = req.body.payload.payment.entity;
+      const payment = data.payload.payment.entity;
 
       const razorpayOrderId = payment.order_id;
       const razorpayPaymentId = payment.id;
@@ -94,7 +94,7 @@ export const razorpayWebhook = async (req, res) => {
     //   2️⃣ REFUND PROCESSED → Update refund + order item
     // =======================================================
     if (event === "refund.processed") {
-      const refundEntity = req.body.payload.refund.entity;
+      const refundEntity = data.payload.refund.entity;
       const refundId = refundEntity.id;
 
       console.log("✔ REFUND PROCESSED:", refundId);
@@ -128,7 +128,7 @@ export const razorpayWebhook = async (req, res) => {
     //   3️⃣ REFUND FAILED → Update status
     // =======================================================
     if (event === "refund.failed") {
-      const refundEntity = req.body.payload.refund.entity;
+      const refundEntity = data.payload.refund.entity;
       const refundId = refundEntity.id;
 
       console.log("❌ REFUND FAILED:", refundId);
