@@ -1,0 +1,31 @@
+# Node and package managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+.cache/
+.tmp/
+coverage/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Vite / frontend caches
+Customer_website/.vite/
+Customer_website/dist/
+
+# Logs
+*.log
+logs/
+
