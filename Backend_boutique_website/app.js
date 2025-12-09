@@ -38,6 +38,15 @@ const corsOptions = {
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
+
+// Razorpay webhook: allow all origins and keep raw body for signature verification
+app.post(
+  "/api/webhook/razorpay",
+  cors({ origin: "*" }),
+  express.raw({ type: "application/json" }),
+  razorpayWebhook
+);
+
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(express.json());
@@ -55,7 +64,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/otp',otpRoutes); 
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/refund", refundRoutes);
-app.use("/api/webhook/razorpay", express.raw({ type: "application/json" }), razorpayWebhook);
+// (Webhook is registered above with raw body & open CORS)
 
 
 // Handle invalid routes
