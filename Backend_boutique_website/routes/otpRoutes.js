@@ -6,7 +6,7 @@ const RouteTemplate = () => {
   const router = express.Router();
 
   // Limit OTP send/resend to 2 requests per 5 minutes per IP
-  const otpLimiter = rateLimitMiddleware(5 * 60 * 1000, 2);
+  const otpLimiter = rateLimitMiddleware(5 * 60 * 1000, 5);
 
   router.post('/', otpLimiter, createOtp);
   router.post('/verify', verifyOtp);
