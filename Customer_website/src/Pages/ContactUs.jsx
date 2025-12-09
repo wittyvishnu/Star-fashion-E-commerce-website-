@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Nav from '../Components/Nav'; 
 import { useSubmitFeedbackMutation } from '../redux/services/feedbackSlice';
 import { FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 
@@ -60,7 +59,7 @@ const ContactUs = () => {
 
   return (
     <div className="bg-[linear-gradient(114.91deg,_#BEE2EF_7.73%,_#73C1DE_103.62%)] text-white min-h-screen">
-      <Nav />
+     
 
       <div className="container mx-auto px-6 md:px-10 flex flex-col items-center space-y-10 pt-10 pb-20">
         
