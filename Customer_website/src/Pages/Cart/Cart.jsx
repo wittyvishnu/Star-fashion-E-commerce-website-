@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
-// Changed FaPhone to FaPhoneAlt for better orientation
 import { FaTrash, FaMapMarkerAlt, FaPhoneAlt, FaPlus, FaCheckCircle } from "react-icons/fa";
 import { FiMoreVertical } from "react-icons/fi";
 import { AiOutlineClose } from "react-icons/ai";
@@ -322,7 +321,6 @@ export default function Cart() {
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
 
   return (
-    // Updated padding for responsiveness
     <div className="p-4 sm:p-6 relative">
       <button
         onClick={() => navigate(-1)}
@@ -345,7 +343,7 @@ export default function Cart() {
             return (
               <div
                 key={item.productId} 
-                className={`relative rounded-xl border bg-white p-4 sm:p-5 ${
+                className={`relative rounded-xl border bg-white p-4 sm:p-5 flex gap-4 lg:grid lg:grid-cols-[88px_1fr_auto] lg:items-center ${
                   isUnavailable ? "border-red-300/80" : "hover:shadow-md"
                 }`}
               >
@@ -359,48 +357,72 @@ export default function Cart() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-[88px_1fr_auto] gap-4 items-center">
-                  <Link to={`/products/${item.productId}`} className="aspect-[3/4] w-22 overflow-hidden rounded-xl bg-gray-100">
-                    <img src={item.thumbnail} alt={item.name} className="h-full w-full object-cover" />
-                  </Link>
+                {/* 1. Image: Fixed width on left */}
+                <Link 
+                  to={`/products/${item.productId}`} 
+                  className="shrink-0 w-24 aspect-[3/4] overflow-hidden rounded-xl bg-gray-100 lg:w-22"
+                >
+                  <img src={item.thumbnail} alt={item.name} className="h-full w-full object-cover" />
+                </Link>
 
-                  <div className="space-y-1">
+                {/* Wrapper for Mobile Content -> turns to 'contents' on Desktop to fall into grid */}
+                <div className="flex flex-1 flex-col justify-between lg:contents">
+                  
+                  {/* 2. Info Section (Name, Size/Color, Desktop Price) */}
+                  <div className="space-y-1 lg:col-start-2">
                     <Link to={`/products/${item.productId}`}>
-                      <h3 className="text-lg font-semibold leading-tight hover:underline">{item.name}</h3>
+                      <h3 className="text-lg font-semibold leading-tight hover:underline line-clamp-2">
+                        {item.name}
+                      </h3>
                     </Link>
                     <p className="text-sm text-gray-600">Size : {item.size}</p>
                     <p className="text-sm text-gray-600">Color : {item.color}</p>
-                    <p className="pt-1 font-semibold">{inr(item.price)}</p>
+                    
+                    {/* Price: Hidden on Mobile, Visible on Desktop (under info) */}
+                    <p className="hidden lg:block pt-1 font-semibold">{inr(item.price)}</p>
                   </div>
 
-                  <div className="flex flex-col items-end gap-3">
-                    <button
-                      onClick={() => removeItem(item.productId)}
-                      aria-label="Remove item"
-                      className="text-black"
-                    >
-                      <FaTrash />
-                    </button>
+                  {/* 3. Actions Section (Mobile Bottom Row / Desktop Right Col) */}
+                  <div className="mt-2 flex items-center justify-between lg:mt-0 lg:col-start-3 lg:flex-col lg:items-end lg:gap-3">
+                    
+                    {/* Price: Visible on Mobile (Left side), Hidden on Desktop */}
+                    <p className="font-semibold lg:hidden">{inr(item.price)}</p>
 
-                    <div className="inline-flex items-center rounded-lg border border-black bg-white">
+                    {/* Controls: Quantity & Delete */}
+                    <div className="flex items-center gap-3 lg:flex-row-reverse ">
+                      
+                      {/* Quantity Adder */}
+                      <div className="inline-flex items-center rounded-lg border border-black bg-white lg:order-2">
+                        <button
+                          onClick={() => decreaseQty(item.productId)}
+                          disabled={isOutOfStock || item.quantity <= 1}
+                          className="h-8 w-8 flex items-center justify-center text-black font-bold disabled:opacity-50"
+                        >
+                          -
+                        </button>
+                        <div className="px-2 text-sm font-medium tabular-nums">{item.quantity}</div>
+                        <button
+                          onClick={() => increaseQty(item.productId)}
+                          disabled={isOutOfStock || item.quantity >= item.stock}
+                          className="h-8 w-8 flex items-center justify-center text-black font-bold disabled:opacity-50"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {/* Delete Button - Order swapped on desktop to be at the top */}
                       <button
-                        onClick={() => decreaseQty(item.productId)}
-                        disabled={isOutOfStock || item.quantity <= 1}
-                        className="h-9 w-9 flex items-center justify-center text-black font-bold disabled:opacity-50"
+                        onClick={() => removeItem(item.productId)}
+                        aria-label="Remove item"
+                        className="text-black lg:order-1 flex items-center justify-center"
                       >
-                        -
-                      </button>
-                      <div className="px-3 text-sm font-medium tabular-nums">{item.quantity}</div>
-                      <button
-                        onClick={() => increaseQty(item.productId)}
-                        disabled={isOutOfStock || item.quantity >= item.stock}
-                        className="h-9 w-9 flex items-center justify-center text-black font-bold disabled:opacity-50"
-                      >
-                        +
+                        <FaTrash />
                       </button>
                     </div>
+
                   </div>
                 </div>
+
               </div>
             );
           })}
@@ -421,7 +443,7 @@ export default function Cart() {
               )}
             </div>
 
-            {/* --- UPDATED: No Address State --- */}
+            {/* No Address State */}
             {addresses.length === 0 ? (
               <div className="text-center py-2">
                 <p className="text-sm text-red-500 mb-2">Please add a shipping address</p>
@@ -441,7 +463,6 @@ export default function Cart() {
                   </p>
                 </div>
                 <div className="flex items-start gap-3">
-                  {/* --- UPDATED: Fixed Phone Icon --- */}
                   <FaPhoneAlt className="mt-0.5 text-black shrink-0" />
                   <p className="text-gray-700">{selectedAddress?.contactPhone || "N/A"}</p>
                 </div>
@@ -461,15 +482,18 @@ export default function Cart() {
             </div>
             <div>
               <label className="block text-sm font-semibold mb-2">Coupon</label>
-              <div className="flex gap-2">
+              {/* Added w-full to ensure container respects parent padding */}
+              <div className="flex gap-2 w-full">
                 <input
                   type="text"
                   placeholder="Enter code"
                   value={coupon}
                   onChange={(e) => setCoupon(e.target.value)}
-                  className="flex-1 border rounded px-3 py-2"
+                  /* Added min-w-0 to allow input to shrink on small screens */
+                  className="flex-1 min-w-0 border rounded px-3 py-2"
                 />
-                <button className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800">
+                {/* Added shrink-0 to prevent button from squashing */ }
+                <button className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 shrink-0">
                   Apply
                 </button>
               </div>
