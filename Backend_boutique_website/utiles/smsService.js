@@ -76,6 +76,11 @@ export const sendPhoneOtp = async (phone, otp) => {
   // -------------------------
 let result;
 
+result = await sendViaTwilio();
+if (result.success) {
+  console.log("OTP sent using:", result.provider);
+  return { success: true, provider: result.provider, otp };
+}
 // Try 2Factor
 result = await sendVia2Factor();
 if (result.success) {
@@ -84,11 +89,7 @@ if (result.success) {
 }
 
 // Try Twilio
-result = await sendViaTwilio();
-if (result.success) {
-  console.log("OTP sent using:", result.provider);
-  return { success: true, provider: result.provider, otp };
-}
+
 
 // 2Try Fast2SMS
 result = await sendViaFast2SMS();

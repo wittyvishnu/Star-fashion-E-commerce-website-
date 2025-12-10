@@ -13,6 +13,13 @@ import { logOut } from '../redux/feauters/authSlice';
 import AuthImage from '../Utiles/AuthImage.jpg';
 import OtpVerification from './OtpVerification';
 
+// Loading Spinner for AuthPage buttons
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center">
+    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+  </div>
+);
+
 const AuthPage = () => {
   const [authMode, setAuthMode] = useState('signIn'); 
   const [signupStep, setSignupStep] = useState(1);
@@ -33,7 +40,7 @@ const AuthPage = () => {
       if (token) {
         try {
           await verifyToken().unwrap();
-          navigate('/products');
+          navigate('/');
         } catch (error) {
           dispatch(logOut());
           setIsCheckingToken(false);
@@ -53,7 +60,6 @@ const AuthPage = () => {
   
   const isLoading = isLoggingIn || isSigningUp || isSendingOtp || isSendingResetOtp || isResettingPassword;
 
-  // --- VALIDATION HELPER ---
   const validatePhoneNumber = (number) => {
     const phoneRegex = /^[6-9]\d{9}$/;
     return phoneRegex.test(number);
@@ -61,7 +67,6 @@ const AuthPage = () => {
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.id]: e.target.value });
   
-  // Strict Phone Input Handler (Only numbers, max 10)
   const handlePhoneChange = (e) => {
     const value = e.target.value;
     if (/^\d*$/.test(value)) {
@@ -91,7 +96,6 @@ const AuthPage = () => {
       return;
     }
 
-    // VALIDATION: Sign Up Phone
     if (!validatePhoneNumber(formData.phone)) {
         setMessage({ type: 'error', text: 'Please enter a valid 10-digit number starting with 6-9.' });
         return;
@@ -116,6 +120,7 @@ const AuthPage = () => {
     setFormData(prev => ({ ...prev, phoneOtp: verifiedOtp }));
     clearMessages();
     try {
+      // This triggers 'isSendingOtp' which we pass to the child component
       await sendOtp({ contact: formData.email, purpose: 'signup' }).unwrap();
       setMessage({ type: 'success', text: 'Phone verified! Now sending OTP to your email.' });
       setSignupStep(3);
@@ -142,7 +147,7 @@ const AuthPage = () => {
         emailOtp: finalFormData.emailOtp,
         phoneOtp: finalFormData.phoneOtp,
       }).unwrap();
-      navigate('/profilepage');
+      navigate('/');
     } catch (err) {
       setMessage({ type: 'error', text: err.data?.message || 'Signup failed. Please try again.' });
       setSignupStep(1);
@@ -154,7 +159,6 @@ const AuthPage = () => {
     e.preventDefault();
     clearMessages();
 
-    // VALIDATION: Sign In (Email or Phone)
     const isEmail = formData.contact.includes('@');
     if (!isEmail) {
         if (!validatePhoneNumber(formData.contact)) {
@@ -166,7 +170,7 @@ const AuthPage = () => {
     try {
         const { contact, password } = formData;
         await login({ contact, password }).unwrap();
-        navigate('/profilepage');
+        navigate('/account');
     } catch (err) {
         setMessage({ type: 'error', text: err.data?.message || 'Login failed.' });
     }
@@ -177,7 +181,6 @@ const AuthPage = () => {
     e.preventDefault();
     clearMessages();
 
-    // VALIDATION: Forgot Password (Email or Phone)
     const isEmail = formData.contact.includes('@');
     if (!isEmail) {
         if (!validatePhoneNumber(formData.contact)) {
@@ -242,30 +245,39 @@ const AuthPage = () => {
           <form onSubmit={handleDetailsSubmit} className="space-y-4">
             <input type="text" id="name" value={formData.name} onChange={handleChange} className="w-full h-[50px] pl-3 border bg-[#D9D9D9] rounded-md" required placeholder="Full Name" />
             <input type="email" id="email" value={formData.email} onChange={handleChange} className="w-full h-[50px] pl-3 border bg-[#D9D9D9] rounded-md" required placeholder="Email Address" />
-            
-            {/* STRICT PHONE INPUT */}
-            <input 
-                type="tel" 
-                id="phone" 
-                value={formData.phone} 
-                onChange={handlePhoneChange} 
-                className="w-full h-[50px] pl-3 border bg-[#D9D9D9] rounded-md" 
-                required 
-                placeholder="Phone Number (10 digits)" 
-                maxLength={10}
-            />
-            
+            <input type="tel" id="phone" value={formData.phone} onChange={handlePhoneChange} className="w-full h-[50px] pl-3 border bg-[#D9D9D9] rounded-md" required placeholder="Phone Number (10 digits)" maxLength={10} />
             <input type="password" id="password" value={formData.password} onChange={handleChange} className="w-full h-[50px] pl-3 border bg-[#D9D9D9] rounded-md" required placeholder="Password" />
             <input type="password" id="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="w-full h-[50px] pl-3 border bg-[#D9D9D9] rounded-md" required placeholder="Confirm Password" />
-            <button type="submit" disabled={isLoading} className="w-full h-[50px] btn-primary">
-              {isLoading ? 'Sending OTP...' : 'Sign Up'}
+            
+            <button type="submit" disabled={isLoading} className="w-full h-[50px] btn-primary disabled:opacity-70 disabled:cursor-not-allowed">
+              {isLoading ? <LoadingSpinner /> : 'Sign Up'}
             </button>
           </form>
         );
       case 2:
-        return <OtpVerification key="phone-otp" contactType="phone" contactValue={formData.phone} purpose="signup" onSuccess={handlePhoneVerificationSuccess} />;
+        return (
+            <OtpVerification 
+                key="phone-otp" 
+                contactType="phone" 
+                contactValue={formData.phone} 
+                purpose="signup" 
+                onSuccess={handlePhoneVerificationSuccess} 
+                // Wait for EMAIL OTP to send before stopping the spinner
+                externalLoading={isSendingOtp} 
+            />
+        );
       case 3:
-        return <OtpVerification key="email-otp" contactType="email" contactValue={formData.email} purpose="signup" onSuccess={handleEmailVerificationSuccess} />;
+        return (
+            <OtpVerification 
+                key="email-otp" 
+                contactType="email" 
+                contactValue={formData.email} 
+                purpose="signup" 
+                onSuccess={handleEmailVerificationSuccess} 
+                // Wait for SIGNUP to complete before stopping spinner
+                externalLoading={isSigningUp}
+            />
+        );
       default: return null;
     }
   };
@@ -274,8 +286,9 @@ const AuthPage = () => {
     <form onSubmit={handleLoginSubmit} className="space-y-4">
       <input type="text" id="contact" value={formData.contact} onChange={handleChange} className="w-full h-[50px] pl-3 border bg-[#D9D9D9] rounded-md" required placeholder="Email or Phone" />
       <input type="password" id="password" value={formData.password} onChange={handleChange} className="w-full h-[50px] pl-3 border bg-[#D9D9D9] rounded-md" required placeholder="Password" />
-      <button type="submit" disabled={isLoading} className="w-full h-[50px] btn-primary">
-        {isLoading ? 'Signing In...' : 'Sign In'}
+      
+      <button type="submit" disabled={isLoading} className="w-full h-[50px] btn-primary disabled:opacity-70 disabled:cursor-not-allowed">
+        {isLoading ? <LoadingSpinner /> : 'Sign In'}
       </button>
     </form>
   );
@@ -287,8 +300,8 @@ const AuthPage = () => {
           <form onSubmit={handleForgotPasswordSendOtp} className="space-y-4">
             <p className="text-sm text-gray-600">Enter your email or phone to receive a reset OTP.</p>
             <input type="text" id="contact" value={formData.contact} onChange={handleChange} className="w-full h-[50px] pl-3 border bg-[#D9D9D9] rounded-md" required placeholder="Email or Phone" />
-            <button type="submit" disabled={isLoading} className="w-full h-[50px] btn-primary">
-              {isLoading ? 'Sending...' : 'Send Reset OTP'}
+            <button type="submit" disabled={isLoading} className="w-full h-[50px] btn-primary disabled:opacity-70 disabled:cursor-not-allowed">
+              {isLoading ? <LoadingSpinner /> : 'Send Reset OTP'}
             </button>
           </form>
         );
@@ -300,8 +313,8 @@ const AuthPage = () => {
              <p className="text-sm text-gray-600">Your identity has been verified. Please create a new password.</p>
             <input type="password" id="newPassword" value={formData.newPassword} onChange={handleChange} className="w-full h-[50px] pl-3 border bg-[#D9D9D9] rounded-md" required placeholder="New Password" />
             <input type="password" id="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="w-full h-[50px] pl-3 border bg-[#D9D9D9] rounded-md" required placeholder="Confirm New Password" />
-            <button type="submit" disabled={isLoading} className="w-full h-[50px] btn-primary">
-              {isLoading ? 'Resetting...' : 'Reset Password'}
+            <button type="submit" disabled={isLoading} className="w-full h-[50px] btn-primary disabled:opacity-70 disabled:cursor-not-allowed">
+              {isLoading ? <LoadingSpinner /> : 'Reset Password'}
             </button>
           </form>
         );
@@ -312,31 +325,24 @@ const AuthPage = () => {
   if (isCheckingToken) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <p className="text-xl font-semibold">Verifying session...</p>
+        <div className="flex flex-col items-center gap-2">
+            <div className="w-8 h-8 border-4 border-[#2518BD] border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-xl font-semibold">Verifying session...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <>
-      <style>{`.btn-primary { background-color: #B5B1FF; color: #3B3A3A; } .btn-primary:hover { background-color: #2518BD; color: white; }`}</style>
+      <style>{`.btn-primary { background-color: #B5B1FF; color: #3B3A3A; } .btn-primary:hover:not(:disabled) { background-color: #2518BD; color: white; }`}</style>
       
-      {/* UPDATED CONTAINER: 
-        1. min-h-screen: Forces full height to center vertically
-        2. px-4: Adds padding on small mobile screens
-        3. flex items-center justify-center: Centers the inner content block
-      */}
       <div className="min-h-screen w-full flex items-center justify-center px-4 py-10">
-        
-        {/* Inner Box: Max width constrained, centers columns */}
         <div className="w-full max-w-5xl flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">
-          
-          {/* Left Side: Image (Hidden on mobile) */}
           <div className="hidden md:flex w-1/2 justify-center">
             <img src={AuthImage} alt="Auth" className="w-full max-w-md object-contain" />
           </div>
 
-          {/* Right Side: Form (Full width on mobile, half on desktop) */}
           <div className="w-full md:w-1/2 max-w-md">
             <h1 className="w-full text-2xl md:text-3xl font-bold mb-6 text-center md:text-left">{getTitle()}</h1>
             
@@ -361,7 +367,6 @@ const AuthPage = () => {
               {authMode === 'forgotPassword' && (<p>Remember your password? <button className="text-[#2518BD] font-semibold hover:underline" onClick={() => handleModeChange('signIn')}>Sign In</button></p>)}
             </div>
           </div>
-
         </div>
       </div>
     </>
